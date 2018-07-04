@@ -10,6 +10,19 @@ const DEFAULT_ACTION_NAMES = [
   'clickOn'
 ];
 
+function isAwaitCall(path) {
+  let parent = path.parent;
+  do {
+    if (parent.value.type === 'AwaitExpression') {
+      return true;
+    }
+
+    parent = parent.parent;
+  } while (parent) 
+
+  return false;
+}
+
 module.exports = function transformer(file, api) {
   const j = getParser(api);
 
@@ -19,7 +32,7 @@ module.exports = function transformer(file, api) {
       if (
         path.node.callee.type === 'MemberExpression'
         && DEFAULT_ACTION_NAMES.includes(path.node.callee.property.name)
-        && path.parentPath.value.type !== 'AwaitExpression'
+        && !isAwaitCall(path)
       ) {
         let parent = path.parent;
         while (parent.value.type !== 'ObjectMethod') {
