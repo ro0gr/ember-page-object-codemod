@@ -1,14 +1,4 @@
 const { getParser } = require('codemod-cli').jscodeshift;
-// const { getParser } = require('jscodeshift');
-
-const DEFAULT_ACTION_NAMES = [
-  'click',
-  'visit',
-  'focus',
-  'blur',
-  'fillIn',
-  'clickOn'
-];
 
 function isAwaitCall(path) {
   let parent = path.parent;
@@ -31,17 +21,19 @@ module.exports = function transformer(file, api) {
     .forEach(path => {
       if (
         path.node.callee.type === 'MemberExpression'
-        && DEFAULT_ACTION_NAMES.includes(path.node.callee.property.name)
         && !isAwaitCall(path)
       ) {
         let parent = path.parent;
-        while (parent.value.type !== 'ObjectMethod') {
-          parent = parent.parent;
-        } 
+        do {    
+          if (parent.value.type === 'ObjectMethod') {
+            parent.node.async = true;
 
-        parent.node.async = true;
-        let awaition = j.awaitExpression(path.node);
-        j(path).replaceWith(awaition);
+            let awaition = j.awaitExpression(path.node);
+            j(path).replaceWith(awaition);
+
+            break;
+          }
+        } while (parent = parent.parent)
       }
     })
     .toSource();
