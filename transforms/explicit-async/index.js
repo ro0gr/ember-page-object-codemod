@@ -1,40 +1,71 @@
 const { getParser } = require('codemod-cli').jscodeshift;
 
-function isAwaitCall(path) {
-  let parent = path.parent;
-  do {
-    if (parent.value.type === 'AwaitExpression') {
-      return true;
-    }
-
-    parent = parent.parent;
-  } while (parent) 
-
-  return false;
-}
-
 module.exports = function transformer(file, api) {
   const j = getParser(api);
 
   return j(file.source)
     .find(j.CallExpression)
-    .forEach(path => {
-      if (
-        path.node.callee.type === 'MemberExpression'
-        && !isAwaitCall(path)
-      ) {
-        let parent = path.parent;
-        do {    
-          if (parent.value.type === 'ObjectMethod') {
-            parent.node.async = true;
+    .filter(isSuspiciousCall)
+    .forEach(p => {
+      const methodDefinition = findClosest(p, p => [
+        'ObjectMethod',
+        'FunctionExpression'
+      ].includes(p.node.type));
 
-            let awaition = j.awaitExpression(path.node);
-            j(path).replaceWith(awaition);
+      if (methodDefinition) {
+        methodDefinition.node.async = true;
 
-            break;
-          }
-        } while (parent = parent.parent)
+        p.replace(j.awaitExpression(p.node));
       }
     })
     .toSource();
+}
+
+/*
+```
+// ignore:
+{
+  async a() { await a.b() },
+
+  a() { eq(a.b()); } }
+}
+
+// transform:
+{
+  a() { a.b() }
+}
+```
+*/
+function isSuspiciousCall(p) {
+  const isSuspicious =
+    p.node.callee.type === 'MemberExpression'
+    && !parentIsACall(p)
+    && !hasClosest(p, parentIsACall, 'BlockStatement')
+    && !hasClosest(p, p => p.node.type === 'AwaitExpression');
+
+  return isSuspicious;
+}
+
+function parentIsACall(p) {
+  return p.parent.node.type === 'CallExpression';
+}
+
+function hasClosest() {
+  return !!findClosest(...arguments);
+}
+
+function findClosest(path, predicate, scopeType) {
+  let parent = path.parent;
+
+  while (parent) {
+    if (scopeType && parent.node.type === scopeType) {
+      return null;
+    }
+
+    if (predicate(parent) === true) {
+      return parent;
+    }
+
+    parent = parent.parent;
+  }
 }
