@@ -54,11 +54,11 @@ function hasClosest() {
   return !!findClosest(...arguments);
 }
 
-function findClosest(path, predicate, scopeType) {
+function findClosest(path, predicate, untilType) {
   let parent = path.parent;
 
   while (parent) {
-    if (scopeType && parent.node.type === scopeType) {
+    if (untilType && parent.node.type === untilType) {
       return null;
     }
 
