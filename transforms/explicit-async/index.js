@@ -3,8 +3,38 @@ const { getParser } = require('codemod-cli').jscodeshift;
 module.exports = function transformer(file, api) {
   const j = getParser(api);
 
-  return j(file.source)
-    .find(j.CallExpression)
+  file.source = `import { create } from 'ember-cli-page-object';
+
+  export default create({
+    a() {
+      this.a();
+    }
+  });
+`;
+
+  const root = j(file.source);
+
+  let importedPages = [];
+  root.find(j.ImportDeclaration, (p) => {
+    return p.source.value.includes('/pages');
+  }).forEach(i => {
+    importedPages = importedPages.concat(
+      i.node.specifiers.map(spec => spec.local.name)
+    );
+  });
+
+  function isPageObjectCall(p) {
+    if (p.node.callee.type !== 'MemberExpression') {
+      return false;
+    }
+
+    return p.node.callee.object && importedPages.includes(
+      calleeRootObject(p.node.callee).name
+    );
+  }
+
+  return root.find(j.CallExpression)
+    .filter(isPageObjectCall)
     .filter(isSuspiciousCall)
     .forEach(p => {
       const methodDefinition = findClosest(p, p => [
@@ -38,12 +68,20 @@ module.exports = function transformer(file, api) {
 */
 function isSuspiciousCall(p) {
   const isSuspicious =
-    p.node.callee.type === 'MemberExpression'
-    && !parentIsACall(p)
-    && !hasClosest(p, parentIsACall, 'BlockStatement')
+    !parentIsACall(p)
+    && !hasClosest(p, parentIsACall)
     && !hasClosest(p, p => p.node.type === 'AwaitExpression');
 
   return isSuspicious;
+}
+
+function calleeRootObject(callee) {
+  let object = callee.object;
+  while (object.object) {
+    object = object.object;
+  }
+
+  return object;
 }
 
 function parentIsACall(p) {

@@ -1,5 +1,7 @@
-test('test', function(assert) {
-    page.visit();
+import page from '/pages/page';
 
-    assert.ok(page.isVisible);
+test('test', function(assert) {
+    page.visit({ id });
+
+    assert.ok(page.contains('some text'));
 });

@@ -1,5 +1,7 @@
-test('test', async function(assert) {
-    await page.visit();
+import page from '/pages/page';
 
-    assert.ok(page.isVisible);
+test('test', async function(assert) {
+    await page.visit({ id });
+
+    assert.ok(page.contains('some text'));
 });
