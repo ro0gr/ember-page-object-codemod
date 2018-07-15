@@ -3,19 +3,12 @@ const { getParser } = require('codemod-cli').jscodeshift;
 module.exports = function transformer(file, api) {
   const j = getParser(api);
 
-  file.source = `import { create } from 'ember-cli-page-object';
-
-  export default create({
-    a() {
-      this.a();
-    }
-  });
-`;
-
-  const root = j(file.source);
+  const ast = j(file.source);
 
   let importedPages = [];
-  root.find(j.ImportDeclaration, (p) => {
+  ast.find(j.ImportDeclaration, (p) => {
+    // @todo: improve to check if the
+    // full import path is inside the pages dir
     return p.source.value.includes('/pages');
   }).forEach(i => {
     importedPages = importedPages.concat(
@@ -28,12 +21,15 @@ module.exports = function transformer(file, api) {
       return false;
     }
 
-    return p.node.callee.object && importedPages.includes(
-      calleeRootObject(p.node.callee).name
-    );
+    const callRootObject = calleeRootObject(p.node.callee);
+    if (callRootObject && importedPages.includes(callRootObject.name)) {
+      return true;
+    }
+
+    return hasClosest(p, p => p.node.type === 'ObjectExpression');
   }
 
-  return root.find(j.CallExpression)
+  return ast.find(j.CallExpression)
     .filter(isPageObjectCall)
     .filter(isSuspiciousCall)
     .forEach(p => {
@@ -69,7 +65,7 @@ module.exports = function transformer(file, api) {
 function isSuspiciousCall(p) {
   const isSuspicious =
     !parentIsACall(p)
-    && !hasClosest(p, parentIsACall)
+    && !hasClosest(p, parentIsACall, 'BlockStatement')
     && !hasClosest(p, p => p.node.type === 'AwaitExpression');
 
   return isSuspicious;
@@ -77,7 +73,7 @@ function isSuspiciousCall(p) {
 
 function calleeRootObject(callee) {
   let object = callee.object;
-  while (object.object) {
+  while (object && object.object) {
     object = object.object;
   }
 
@@ -85,7 +81,7 @@ function calleeRootObject(callee) {
 }
 
 function parentIsACall(p) {
-  return p.parent.node.type === 'CallExpression';
+  return p.parent && p.parent.node.type === 'CallExpression';
 }
 
 function hasClosest() {
