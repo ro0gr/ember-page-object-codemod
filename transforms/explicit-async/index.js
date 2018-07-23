@@ -1,6 +1,6 @@
 const j = require('jscodeshift').withParser('babel'); 
 
-const knownSyncMethods = [
+const KNOWN_SYNC_METHODS = [
   'setContext',
   'removeContext',
   'useNativeEvents',
@@ -39,7 +39,6 @@ function isPageObjectCall(p) {
   if (isPageObject(object, p)) {
     return true;
   }
-
   // call inside a definition
   return hasClosest(p, p => p.node.type === 'ObjectExpression');
 }
@@ -63,14 +62,7 @@ function isPageObject(object, p) {
 
   const closestVarDeclarator = findClosest(binding, p => p.node.type === 'VariableDeclarator');
   if (closestVarDeclarator) { 
-    let context;
-    if (closestVarDeclarator.node.init.type === 'Identifier') {
-      context = closestVarDeclarator.node.init;
-    } else {
-      context = closestVarDeclarator.node.init.callee
-        ? rootObject(closestVarDeclarator.node.init.callee)
-        : rootObject(closestVarDeclarator.node.init);
-    }
+    let context = rootObject(closestVarDeclarator.node.init);
 
     return isPageObject(context, binding.parent);
   }
@@ -95,14 +87,13 @@ function isCreateAssignment(p) {
 }
 
 function findBinding(scope, context) {
-  let local = scope.getBindings()[context.name];
-  if (local) {
-    return local[local.length - 1];
-  }
+  while (scope) {
+    let local = scope.getBindings()[context.name];
+    if (local) {
+      return local[local.length - 1];
+    }
 
-  let global = scope.getGlobalScope().getBindings()[context.name]
-  if (global) {
-    return global[global.length - 1];
+    scope = scope.parent;
   }
 }
 
@@ -131,19 +122,33 @@ function isLikeImplicitActionCall(p) {
     // skip explicitly async methods
     && !hasClosest(p, p => p.node.type === 'AwaitExpression')
     // exceptional PO methods
-    && !knownSyncMethods.includes(p.node.callee.property.name);
+    && !KNOWN_SYNC_METHODS.includes(p.node.callee.property.name);
 
   return isSuspicious;
 }
-
+              
 function rootObject(callee) {
-  if (!callee || !callee.object) {
+  if (callee.type === 'Identifier') {
+    return callee;
+  }
+
+  if (!callee || (!callee.object && !callee.callee)) {
     throw new Error('Must be a callee or init')
   }
 
-  let object = callee.object;
-  while (object && object.object) {
-    object = object.object;
+  let object = callee;
+  while (object) {
+    if (object.type === 'CallExpression') {
+      if (object.callee) {
+        return rootObject(object.callee);
+      } 
+    } else if (object.object) {
+      object = object.object;
+    } else {
+
+      // type=Identifier
+      return object;
+    }
   }
 
   return object;
