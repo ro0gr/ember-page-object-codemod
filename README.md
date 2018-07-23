@@ -1,7 +1,7 @@
 # ember-page-object-codemod
 
 
-A collection of codemod's for ember-page-object-codemod.
+A collection of codemod's for [ember-cli-page-object](https://github.com/san650/ember-cli-page-object).
 
 ## Usage
 
