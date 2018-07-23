@@ -1,15 +1,16 @@
 # explicit-async
 
+Converts all page object implicit async actions(old testing style) to the explicit async actions(ember@3 testing style).
 
 ## Usage
 
 ```
-npx ember-page-object-codemod explicit-async path/of/files/ or/some**/*glob.js
+npx ember-page-object-codemod explicit-async ./tests/**/*-test.js ./tests/pages
 
 # or
 
 yarn global add ember-page-object-codemod
-ember-page-object-codemod explicit-async path/of/files/ or/some**/*glob.js
+ember-page-object-codemod explicit-async ./tests/**/*-test.js ./tests/pages
 ```
 
 ## Input / Output
