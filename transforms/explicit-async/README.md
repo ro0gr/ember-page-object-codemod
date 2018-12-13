@@ -21,6 +21,7 @@ ember-page-object-codemod explicit-async ./tests/**/*-test.js ./tests/pages
 * [collections](#collections)
 * [definition](#definition)
 * [destruction](#destruction)
+* [known-sync-methods](#known-sync-methods)
 * [nesting](#nesting)
 * [test](#test)
 * [with-chaining](#with-chaining)
