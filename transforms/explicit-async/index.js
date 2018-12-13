@@ -1,10 +1,18 @@
 const j = require('jscodeshift').withParser('babel'); 
 
 const KNOWN_SYNC_METHODS = [
+  'render',
   'setContext',
   'removeContext',
   'useNativeEvents',
-  'objectAt'
+
+  // collection
+  'objectAt',
+  'toArray',
+  'map',
+  'mapBy',
+  'filter',
+  'forEach'
 ];
 
 module.exports = function transformer(file) {
