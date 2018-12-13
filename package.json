@@ -1,6 +1,6 @@
 {
   "name": "ember-page-object-codemod",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "scripts": {
     "test": "codemod-cli test",
     "update-docs": "codemod-cli update-docs"
