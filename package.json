@@ -12,7 +12,9 @@
   "bin": "./bin/cli.js",
   "keywords": [
     "ember-cli-page-object",
-    "codemod-cli"
+    "codemod-cli",
+    "page-object",
+    "codemod"
   ],
   "dependencies": {
     "codemod-cli": "^0.2.2"
