@@ -16,7 +16,9 @@ const KNOWN_SYNC_METHODS = [
 ];
 
 module.exports = function transformer(file, api) {
-  const j = getParser(api);
+  const j = getParser(api)
+    // remove after figure out typescript + const destruction issue
+    .withParser('babel');
 
   const ast = j(file.source);
 
