@@ -1,4 +1,4 @@
-const j = require('jscodeshift').withParser('babel'); 
+const { getParser } = require('codemod-cli').jscodeshift;
 
 const KNOWN_SYNC_METHODS = [
   'render',
@@ -12,21 +12,24 @@ const KNOWN_SYNC_METHODS = [
   'map',
   'mapBy',
   'filter',
-  'forEach'
+  'forEach',
 ];
 
-module.exports = function transformer(file) {
+module.exports = function transformer(file, api) {
+  const j = getParser(api)
+    // remove after figure out typescript + const destruction issue
+    .withParser('babel');
+
   const ast = j(file.source);
 
-  const r = ast.find(j.CallExpression)
+  const r = ast
+    .find(j.CallExpression)
     .filter(isPageObjectCall)
     .filter(isLikeImplicitActionCall)
     .forEach(p => {
-      const methodDefinition = findClosest(p, p => [
-        'ObjectMethod',
-        'FunctionExpression',
-        'ArrowFunctionExpression'
-      ].includes(p.node.type));
+      const methodDefinition = findClosest(p, p =>
+        ['ObjectMethod', 'FunctionExpression', 'ArrowFunctionExpression'].includes(p.node.type)
+      );
 
       if (methodDefinition) {
         methodDefinition.node.async = true;
@@ -36,7 +39,7 @@ module.exports = function transformer(file) {
     });
 
   return r.toSource();
-}
+};
 
 function isPageObjectCall(p) {
   if (p.node.callee.type !== 'MemberExpression') {
@@ -61,20 +64,21 @@ function isPageObject(object, p) {
     return true;
   }
 
-  if (binding.parent.node.type === 'ArrayPattern'
-    && binding.parent.parent.node.type === 'VariableDeclarator'
+  if (
+    binding.parent.node.type === 'ArrayPattern' &&
+    binding.parent.parent.node.type === 'VariableDeclarator'
   ) {
     const context = rootObject(binding.parent.parent.node.init);
     return isPageObject(context, binding.parent.parent);
   }
 
   const closestVarDeclarator = findClosest(binding, p => p.node.type === 'VariableDeclarator');
-  if (closestVarDeclarator) { 
+  if (closestVarDeclarator) {
     let context = rootObject(closestVarDeclarator.node.init);
 
     return isPageObject(context, binding.parent);
   }
-  
+
   if (binding.parent.parent.node.type === 'ImportDeclaration') {
     return binding.parent.parent.node.source.value.includes('/pages');
   }
@@ -84,9 +88,9 @@ function isPageObject(object, p) {
 
 function isCreateAssignment(p) {
   if (
-    p.node.type === 'VariableDeclarator'
-    && p.node.init.type === 'CallExpression'
-    && p.node.init.callee.name === 'create'
+    p.node.type === 'VariableDeclarator' &&
+    p.node.init.type === 'CallExpression' &&
+    p.node.init.callee.name === 'create'
   ) {
     return true;
   }
@@ -125,23 +129,23 @@ function isLikeImplicitActionCall(p) {
     // if PO method is called inside another call, most likely it's an assertion.
     // skip it:
     // `assert.ok(po.contains('something'))`
-    !parentIsACall(p) 
-    && !hasClosest(p, parentIsACall, 'BlockStatement')
+    !parentIsACall(p) &&
+    !hasClosest(p, parentIsACall, 'BlockStatement') &&
     // skip explicitly async methods
-    && !hasClosest(p, p => p.node.type === 'AwaitExpression')
+    !hasClosest(p, p => p.node.type === 'AwaitExpression') &&
     // exceptional PO methods
-    && !KNOWN_SYNC_METHODS.includes(p.node.callee.property.name);
+    !KNOWN_SYNC_METHODS.includes(p.node.callee.property.name);
 
   return isSuspicious;
 }
-              
+
 function rootObject(callee) {
   if (callee.type === 'Identifier') {
     return callee;
   }
 
   if (!callee || (!callee.object && !callee.callee)) {
-    throw new Error('Must be a callee or init')
+    throw new Error('Must be a callee or init');
   }
 
   let object = callee;
@@ -149,11 +153,10 @@ function rootObject(callee) {
     if (object.type === 'CallExpression') {
       if (object.callee) {
         return rootObject(object.callee);
-      } 
+      }
     } else if (object.object) {
       object = object.object;
     } else {
-
       // type=Identifier
       return object;
     }
