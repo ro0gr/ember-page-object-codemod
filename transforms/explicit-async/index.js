@@ -1,4 +1,5 @@
 const { getParser } = require('codemod-cli').jscodeshift;
+const tsParser = require('jscodeshift/parser/ts');
 
 const KNOWN_SYNC_METHODS = [
   'render',
@@ -18,7 +19,7 @@ const KNOWN_SYNC_METHODS = [
 module.exports = function transformer(file, api) {
   const j = getParser(api)
     // remove after figure out typescript + const destruction issue
-    .withParser('babel');
+    .withParser(tsParser.parse);
 
   const ast = j(file.source);
 

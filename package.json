@@ -19,7 +19,8 @@
     "page-object"
   ],
   "dependencies": {
-    "codemod-cli": "^2.1.0"
+    "codemod-cli": "^2.1.0",
+    "jscodeshift": "^0.7.0"
   },
   "devDependencies": {
     "coveralls": "^3.0.6",
