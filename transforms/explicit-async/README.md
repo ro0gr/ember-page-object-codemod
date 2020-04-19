@@ -41,7 +41,7 @@ test('test', (assert) => {
 
 ```
 
-**Output** (<small>[arrow-test.input.js](transforms/explicit-async/__testfixtures__/arrow-test.output.js)</small>):
+**Output** (<small>[arrow-test.output.js](transforms/explicit-async/__testfixtures__/arrow-test.output.js)</small>):
 ```js
 import page from '/pages/page';
 
@@ -73,7 +73,7 @@ export default {
   
 ```
 
-**Output** (<small>[class.input.js](transforms/explicit-async/__testfixtures__/class.output.js)</small>):
+**Output** (<small>[class.output.js](transforms/explicit-async/__testfixtures__/class.output.js)</small>):
 ```js
 export default {
     async member() {
@@ -112,7 +112,7 @@ test('collection works', function(assert) {
 
 ```
 
-**Output** (<small>[collections.input.js](transforms/explicit-async/__testfixtures__/collections.output.js)</small>):
+**Output** (<small>[collections.output.js](transforms/explicit-async/__testfixtures__/collections.output.js)</small>):
 ```js
 import { aPage } from 'my-app/tests/pages';
 
@@ -151,7 +151,7 @@ export default {
 };
 ```
 
-**Output** (<small>[definition.input.js](transforms/explicit-async/__testfixtures__/definition.output.js)</small>):
+**Output** (<small>[definition.output.js](transforms/explicit-async/__testfixtures__/definition.output.js)</small>):
 ```js
 export default {
     scope: '.selector',
@@ -185,7 +185,7 @@ test('destruction works', function(assert) {
 
 ```
 
-**Output** (<small>[destruction.input.js](transforms/explicit-async/__testfixtures__/destruction.output.js)</small>):
+**Output** (<small>[destruction.output.js](transforms/explicit-async/__testfixtures__/destruction.output.js)</small>):
 ```js
 import aPage from 'my-app/tests/pages';
 
@@ -193,6 +193,46 @@ test('destruction works', async function(assert) {
   const { aComponent } = aPage;
 
   await aComponent.click();
+})
+
+```
+---
+<a id="known-sync-methods">**known-sync-methods**</a>
+
+**Input** (<small>[known-sync-methods.input.js](transforms/explicit-async/__testfixtures__/known-sync-methods.input.js)</small>):
+```js
+import aPage from 'my-app/tests/pages';
+
+test('should not be affected', async function(assert) {
+  aPage.render();
+  aPage.setContext();
+  aPage.removeContext();
+  aPage.useNativeEvents();
+  aPage.objectAt();
+  aPage.toArray();
+  aPage.map();
+  aPage.mapBy();
+  aPage.forEach();
+  aPage.filter();
+})
+
+```
+
+**Output** (<small>[known-sync-methods.output.js](transforms/explicit-async/__testfixtures__/known-sync-methods.output.js)</small>):
+```js
+import aPage from 'my-app/tests/pages';
+
+test('should not be affected', async function(assert) {
+  aPage.render();
+  aPage.setContext();
+  aPage.removeContext();
+  aPage.useNativeEvents();
+  aPage.objectAt();
+  aPage.toArray();
+  aPage.map();
+  aPage.mapBy();
+  aPage.forEach();
+  aPage.filter();
 })
 
 ```
@@ -217,7 +257,7 @@ test('complex collection with a nested scope', function(assert) {
 
 ```
 
-**Output** (<small>[nesting.input.js](transforms/explicit-async/__testfixtures__/nesting.output.js)</small>):
+**Output** (<small>[nesting.output.js](transforms/explicit-async/__testfixtures__/nesting.output.js)</small>):
 ```js
 import A from 'somewhere';
 import complexPage from '../pages';
@@ -248,7 +288,7 @@ test('test', function(assert) {
 
 ```
 
-**Output** (<small>[test.input.js](transforms/explicit-async/__testfixtures__/test.output.js)</small>):
+**Output** (<small>[test.output.js](transforms/explicit-async/__testfixtures__/test.output.js)</small>):
 ```js
 import page from '/pages/page';
 
@@ -272,7 +312,7 @@ export default {
 }
 ```
 
-**Output** (<small>[with-chaining.input.js](transforms/explicit-async/__testfixtures__/with-chaining.output.js)</small>):
+**Output** (<small>[with-chaining.output.js](transforms/explicit-async/__testfixtures__/with-chaining.output.js)</small>):
 ```js
 export default {
     scope: '.selector',
@@ -282,4 +322,4 @@ export default {
     }
 }
 ```
-<!--FIXTURE_CONTENT_END-->
+<!--FIXTURES_CONTENT_END-->
