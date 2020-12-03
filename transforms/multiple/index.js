@@ -12,9 +12,13 @@ module.exports = function transformer(file, api, options) {
     return file.source;
   }
 
-  return findNodes(j, file.source)
+  let replacedCalleeNames = [];
+
+  let source = findNodes(j, file.source)
     .replaceWith(nodePath => {
       const { node, parent } = nodePath;
+
+      replacedCalleeNames.push(node.value.callee.name);
 
       addGetterProperty(j, node, parent);
       transformProperty(j, node);
@@ -22,15 +26,17 @@ module.exports = function transformer(file, api, options) {
       return node;
     })
     .toSource(printOptions);
-}
+
+  return organizeImports(j, source, replacedCalleeNames).toSource(printOptions);
+};
 
 function transformProperty(j, node) {
   let callExpression = node.value;
   let propName = node.key.name;
 
-  let newArgs = callExpression.arguments.filter((argument) => (
-    !expressionWithMultipleKeyword(j, argument)
-  ));
+  let newArgs = callExpression.arguments.filter(
+    argument => !expressionWithMultipleKeyword(j, argument)
+  );
 
   node.key.name = `_${propName}`;
   callExpression.callee.name = 'collection';
@@ -41,11 +47,7 @@ function addGetterProperty(j, node, parent) {
   let callExpression = node.value;
   let propName = node.key.name;
 
-  let descriptorProperty = j.property(
-    'init',
-    j.identifier('isDescriptor'),
-    j.literal(true)
-  );
+  let descriptorProperty = j.property('init', j.identifier('isDescriptor'), j.literal(true));
 
   let newCallExpression = j.callExpression(
     j.memberExpression(
@@ -54,12 +56,9 @@ function addGetterProperty(j, node, parent) {
     ),
     [
       j.arrowFunctionExpression(
-        [ j.identifier('el') ],
-        j.memberExpression(
-          j.identifier('el'),
-          j.identifier(callExpression.callee.name)
-        )
-      )
+        [j.identifier('el')],
+        j.memberExpression(j.identifier('el'), j.identifier(callExpression.callee.name))
+      ),
     ]
   );
   let getterProperty = j.property(
@@ -68,30 +67,60 @@ function addGetterProperty(j, node, parent) {
     j.functionExpression(
       null,
       [],
-      j.blockStatement(
-        [
-          j.returnStatement(newCallExpression)
-        ]
-      ),
+      j.blockStatement([j.returnStatement(newCallExpression)]),
       false,
       true
     )
   );
 
-  let objectExpression = j.objectExpression(
-    [
-      descriptorProperty,
-      getterProperty
-    ]
-  );
+  let objectExpression = j.objectExpression([descriptorProperty, getterProperty]);
 
-  let newProperty = j.property(
-    'init',
-    j.identifier(propName),
-    objectExpression
-  );
+  let newProperty = j.property('init', j.identifier(propName), objectExpression);
 
   parent.node.properties.push(newProperty);
+}
+
+function organizeImports(j, source, replacedNames) {
+  let collectionSpecifierAdded = false;
+
+  return findPageObjectDeclaration(j, source)
+    .replaceWith(nodePath => {
+      let { node } = nodePath;
+
+      if (replacedNames.length === 0) {
+        return node;
+      }
+
+      let importedNames = node.specifiers.filter(s => s.imported).map(s => s.imported.name);
+
+      // remove unused specifiers
+      node.specifiers = node.specifiers.filter(specifier => {
+        if (!specifier.imported) {
+          return true;
+        }
+        const name = specifier.imported.name;
+
+        let isUsed = j(source).find(j.CallExpression, { callee: { name } }).length > 0;
+        return isUsed || !replacedNames.includes(specifier.imported.name);
+      });
+
+      // add collection specifier
+      if (!collectionSpecifierAdded && !importedNames.includes('collection')) {
+        node.specifiers.push(
+          j.importSpecifier(j.identifier('collection'), j.identifier('collection'))
+        );
+      }
+      collectionSpecifierAdded = true;
+      return node;
+    })
+    .forEach(nodePath => {
+      let { node } = nodePath;
+
+      // remove imports without specifiers
+      if (node.specifiers.length === 0) {
+        j(nodePath).remove();
+      }
+    });
 }
 
 /*
@@ -119,8 +148,10 @@ function pageObjectPropertyWithMultipleKeyword(j, node) {
   let parentCallExpression = objectExpression.parent;
 
   // If parent expression is not call expression or is not supported call expression
-  if (parentCallExpression.value.type !== j.CallExpression.name
-      || !SUPPORTED_CALLEE_NAMES.includes(parentCallExpression.value.callee.name)) {
+  if (
+    parentCallExpression.value.type !== j.CallExpression.name ||
+    !SUPPORTED_CALLEE_NAMES.includes(parentCallExpression.value.callee.name)
+  ) {
     return false;
   }
 
@@ -148,8 +179,7 @@ function expressionWithMultipleKeyword(j, node) {
 
   let objectProperty = node.properties[0];
 
-  return objectProperty.key.type === j.Identifier.name
-    && objectProperty.key.name === 'multiple';
+  return objectProperty.key.type === j.Identifier.name && objectProperty.key.name === 'multiple';
 }
 
 function findPageObjectDeclaration(j, source) {
