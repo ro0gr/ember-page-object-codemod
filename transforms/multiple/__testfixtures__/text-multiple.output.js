@@ -8,7 +8,7 @@ const page = create({
     isDescriptor: true,
 
     get: function() {
-      return this._tags.map(el => el.text);
+      return this._tags.map((el) => el.text);
     }
   }
 });

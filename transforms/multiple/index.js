@@ -4,8 +4,9 @@ const EXTEND_SOURCE_PATH = 'ember-cli-page-object/extend';
 
 const SUPPORTED_CALLEE_NAMES = ['create', 'collection'];
 
-module.exports = function transformer(file, api) {
+module.exports = function transformer(file, api, options) {
   const j = getParser(api);
+  const printOptions = options.printOptions || { arrowParensAlways: true };
 
   if (!findPageObjectDeclaration(j, file.source).length) {
     return file.source;
@@ -20,7 +21,7 @@ module.exports = function transformer(file, api) {
 
       return node;
     })
-    .toSource();
+    .toSource(printOptions);
 }
 
 function transformProperty(j, node) {
@@ -73,7 +74,7 @@ function addGetterProperty(j, node, parent) {
         ]
       ),
       false,
-      false
+      true
     )
   );
 
