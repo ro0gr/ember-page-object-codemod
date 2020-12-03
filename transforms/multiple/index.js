@@ -39,10 +39,55 @@ function transformProperty(j, node) {
 function addGetterProperty(j, node, parent) {
   let callExpression = node.value;
   let propName = node.key.name;
+
+  let descriptorProperty = j.property(
+    'init',
+    j.identifier('isDescriptor'),
+    j.literal(true)
+  );
+
+  let newCallExpression = j.callExpression(
+    j.memberExpression(
+      j.memberExpression(j.thisExpression(), j.identifier(`_${propName}`)),
+      j.identifier('map')
+    ),
+    [
+      j.arrowFunctionExpression(
+        [ j.identifier('el') ],
+        j.memberExpression(
+          j.identifier('el'),
+          j.identifier(callExpression.callee.name)
+        )
+      )
+    ]
+  );
+  let getterProperty = j.property(
+    'init',
+    j.identifier('get'),
+    j.functionExpression(
+      null,
+      [],
+      j.blockStatement(
+        [
+          j.returnStatement(newCallExpression)
+        ]
+      ),
+      false,
+      false
+    )
+  );
+
+  let objectExpression = j.objectExpression(
+    [
+      descriptorProperty,
+      getterProperty
+    ]
+  );
+
   let newProperty = j.property(
     'init',
     j.identifier(propName),
-    j.literal(true)
+    objectExpression
   );
 
   parent.node.properties.push(newProperty);
