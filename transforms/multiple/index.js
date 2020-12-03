@@ -2,11 +2,12 @@ const { getParser } = require('codemod-cli').jscodeshift;
 const ROOT_SOURCE_PATH = 'ember-cli-page-object';
 const EXTEND_SOURCE_PATH = 'ember-cli-page-object/extend';
 
-const SUPPORTED_CALLEE_NAMES = ['create', 'collection'];
+const SUPPORTED_PARENT_CALLEE_NAMES = ['create', 'collection'];
+const SUPPORTED_PROP_CALLEE_NAMES = ['text'];
 
 module.exports = function transformer(file, api, options) {
   const j = getParser(api);
-  const printOptions = options.printOptions || { arrowParensAlways: true };
+  const printOptions = options.printOptions || { arrowParensAlways: true, trailingComma: false };
 
   if (!findPageObjectDeclaration(j, file.source).length) {
     return file.source;
@@ -150,7 +151,7 @@ function pageObjectPropertyWithMultipleKeyword(j, node) {
   // If parent expression is not call expression or is not supported call expression
   if (
     parentCallExpression.value.type !== j.CallExpression.name ||
-    !SUPPORTED_CALLEE_NAMES.includes(parentCallExpression.value.callee.name)
+    !SUPPORTED_PARENT_CALLEE_NAMES.includes(parentCallExpression.value.callee.name)
   ) {
     return false;
   }
@@ -158,6 +159,11 @@ function pageObjectPropertyWithMultipleKeyword(j, node) {
   let childCallExpression = node.value.value;
   // If property value is not call expression
   if (childCallExpression.type !== j.CallExpression.name) {
+    return false;
+  }
+
+  // If callee is not supported
+  if (!SUPPORTED_PROP_CALLEE_NAMES.includes(childCallExpression.callee.name)) {
     return false;
   }
 
