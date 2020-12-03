@@ -3,7 +3,7 @@ const ROOT_SOURCE_PATH = 'ember-cli-page-object';
 const EXTEND_SOURCE_PATH = 'ember-cli-page-object/extend';
 
 const SUPPORTED_PARENT_CALLEE_NAMES = ['create', 'collection'];
-const SUPPORTED_PROP_CALLEE_NAMES = ['text'];
+const SUPPORTED_PROP_CALLEE_NAMES = ['text', 'value'];
 
 module.exports = function transformer(file, api, options) {
   const j = getParser(api);
