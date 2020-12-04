@@ -5,8 +5,13 @@ const EXTEND_SOURCE_PATH = 'ember-cli-page-object/extend';
 const SUPPORTED_PARENT_PROPS = ['create', 'collection'];
 
 const SUPPORTED_TEXT_BASED_PROPS = ['text', 'value'];
+const SUPPORTED_BOOL_BASED_PROPS = ['isVisible', 'isHidden', 'isPresent'];
 const SUPPORTED_SCOPE_BASED_PROPS = ['attribute', 'property', 'hasClass', 'notHasClass'];
-const SUPPORTED_PROP_CALLEE_NAMES = [...SUPPORTED_TEXT_BASED_PROPS, ...SUPPORTED_SCOPE_BASED_PROPS];
+const SUPPORTED_PROP_CALLEE_NAMES = [
+  ...SUPPORTED_TEXT_BASED_PROPS,
+  ...SUPPORTED_BOOL_BASED_PROPS,
+  ...SUPPORTED_SCOPE_BASED_PROPS,
+];
 
 module.exports = function transformer(file, api, options) {
   const j = getParser(api);
@@ -43,8 +48,11 @@ function transformProperty(j, node) {
 
   let newArgs = transformArguments(j, node);
 
-  node.key.name = `_${propName}`;
-  callExpression.callee.name = 'collection';
+  if (!SUPPORTED_BOOL_BASED_PROPS.includes(callExpression.callee.name)) {
+    node.key.name = `_${propName}`;
+    callExpression.callee.name = 'collection';
+  }
+
   callExpression.arguments = newArgs;
 }
 
@@ -54,6 +62,10 @@ function transformArguments(j, node) {
   const args = callExpression.arguments;
 
   if (SUPPORTED_TEXT_BASED_PROPS.includes(calleeName)) {
+    return args.filter(arg => !expressionWithMultipleKeyword(j, arg));
+  }
+
+  if (SUPPORTED_BOOL_BASED_PROPS.includes(calleeName)) {
     return args.filter(arg => !expressionWithMultipleKeyword(j, arg));
   }
 
@@ -101,7 +113,13 @@ function argsForScopedProperty(j, node) {
 }
 
 function addGetterProperty(j, node, parent) {
-  let propName = node.key.name;
+  let callExpression = node.value;
+  const propName = node.key.name;
+  const calleeName = callExpression.callee.name;
+
+  if (SUPPORTED_BOOL_BASED_PROPS.includes(calleeName)) {
+    return;
+  }
 
   let descriptorProperty = j.property('init', j.identifier('isDescriptor'), j.literal(true));
 
@@ -161,7 +179,8 @@ function organizeImports(j, source, replacedNames) {
       });
 
       // add collection specifier
-      if (!collectionSpecifierAdded && !importedNames.includes('collection')) {
+      let isUsed = j(source).find(j.CallExpression, { callee: { name: 'collection' } }).length > 0;
+      if (isUsed && !collectionSpecifierAdded && !importedNames.includes('collection')) {
         node.specifiers.push(
           j.importSpecifier(j.identifier('collection'), j.identifier('collection'))
         );
