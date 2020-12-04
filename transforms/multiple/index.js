@@ -2,8 +2,11 @@ const { getParser } = require('codemod-cli').jscodeshift;
 const ROOT_SOURCE_PATH = 'ember-cli-page-object';
 const EXTEND_SOURCE_PATH = 'ember-cli-page-object/extend';
 
-const SUPPORTED_PARENT_CALLEE_NAMES = ['create', 'collection'];
-const SUPPORTED_PROP_CALLEE_NAMES = ['text', 'value'];
+const SUPPORTED_PARENT_PROPS = ['create', 'collection'];
+
+const SUPPORTED_TEXT_BASED_PROPS = ['text', 'value'];
+const SUPPORTED_SCOPE_BASED_PROPS = ['attribute'];
+const SUPPORTED_PROP_CALLEE_NAMES = [...SUPPORTED_TEXT_BASED_PROPS, ...SUPPORTED_SCOPE_BASED_PROPS];
 
 module.exports = function transformer(file, api, options) {
   const j = getParser(api);
@@ -35,20 +38,69 @@ module.exports = function transformer(file, api, options) {
 };
 
 function transformProperty(j, node) {
-  let callExpression = node.value;
-  let propName = node.key.name;
+  const callExpression = node.value;
+  const propName = node.key.name;
 
-  let newArgs = callExpression.arguments.filter(
-    argument => !expressionWithMultipleKeyword(j, argument)
-  );
+  let newArgs = transformArguments(j, node);
 
   node.key.name = `_${propName}`;
   callExpression.callee.name = 'collection';
   callExpression.arguments = newArgs;
 }
 
-function addGetterProperty(j, node, parent) {
+function transformArguments(j, node) {
+  const callExpression = node.value;
+  const calleeName = callExpression.callee.name;
+  const args = callExpression.arguments;
+
+  if (SUPPORTED_TEXT_BASED_PROPS.includes(calleeName)) {
+    return args.filter(arg => !expressionWithMultipleKeyword(j, arg));
+  }
+
+  if (SUPPORTED_SCOPE_BASED_PROPS.includes(calleeName)) {
+    return argsForScopedProperty(j, node);
+  }
+
+  return args;
+}
+
+function getPageObjectPropName(node) {
   let callExpression = node.value;
+  let propName = node.key.name;
+  const calleeName = callExpression.callee.name;
+
+  if (SUPPORTED_TEXT_BASED_PROPS.includes(calleeName)) {
+    return calleeName;
+  }
+
+  if (SUPPORTED_SCOPE_BASED_PROPS.includes(calleeName)) {
+    return propName;
+  }
+
+  return null;
+}
+
+function argsForScopedProperty(j, node) {
+  const callExpression = node.value;
+  const propName = node.key.name;
+  const calleeName = callExpression.callee.name;
+  const args = callExpression.arguments;
+
+  let [first, second, ...rest] = args.filter(arg => !expressionWithMultipleKeyword(j, arg));
+  return [
+    second,
+    ...rest,
+    j.objectExpression([
+      j.property(
+        'init',
+        j.identifier(propName),
+        j.callExpression(j.identifier(calleeName), [first])
+      ),
+    ]),
+  ];
+}
+
+function addGetterProperty(j, node, parent) {
   let propName = node.key.name;
 
   let descriptorProperty = j.property('init', j.identifier('isDescriptor'), j.literal(true));
@@ -61,7 +113,7 @@ function addGetterProperty(j, node, parent) {
     [
       j.arrowFunctionExpression(
         [j.identifier('el')],
-        j.memberExpression(j.identifier('el'), j.identifier(callExpression.callee.name))
+        j.memberExpression(j.identifier('el'), j.identifier(getPageObjectPropName(node)))
       ),
     ]
   );
@@ -154,7 +206,7 @@ function pageObjectPropertyWithMultipleKeyword(j, node) {
   // If parent expression is not call expression or is not supported call expression
   if (
     parentCallExpression.value.type !== j.CallExpression.name ||
-    !SUPPORTED_PARENT_CALLEE_NAMES.includes(parentCallExpression.value.callee.name)
+    !SUPPORTED_PARENT_PROPS.includes(parentCallExpression.value.callee.name)
   ) {
     return false;
   }
