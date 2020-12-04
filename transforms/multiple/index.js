@@ -5,7 +5,7 @@ const EXTEND_SOURCE_PATH = 'ember-cli-page-object/extend';
 const SUPPORTED_PARENT_PROPS = ['create', 'collection'];
 
 const SUPPORTED_TEXT_BASED_PROPS = ['text', 'value'];
-const SUPPORTED_SCOPE_BASED_PROPS = ['attribute'];
+const SUPPORTED_SCOPE_BASED_PROPS = ['attribute', 'property', 'hasClass', 'notHasClass'];
 const SUPPORTED_PROP_CALLEE_NAMES = [...SUPPORTED_TEXT_BASED_PROPS, ...SUPPORTED_SCOPE_BASED_PROPS];
 
 module.exports = function transformer(file, api, options) {
