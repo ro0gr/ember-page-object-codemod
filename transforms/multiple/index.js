@@ -15,19 +15,22 @@ module.exports = function transformer(file, api, options) {
 
   let replacedCalleeNames = [];
 
-  let source = findNodes(j, file.source)
-    .replaceWith(nodePath => {
-      const { node, parent } = nodePath;
+  let nodes = findNodes(j, file.source).replaceWith(nodePath => {
+    const { node, parent } = nodePath;
 
-      replacedCalleeNames.push(node.value.callee.name);
+    replacedCalleeNames.push(node.value.callee.name);
 
-      addGetterProperty(j, node, parent);
-      transformProperty(j, node);
+    addGetterProperty(j, node, parent);
+    transformProperty(j, node);
 
-      return node;
-    })
-    .toSource(printOptions);
+    return node;
+  });
 
+  if (replacedCalleeNames.length === 0) {
+    return file.source;
+  }
+
+  let source = nodes.toSource(printOptions);
   return organizeImports(j, source, replacedCalleeNames).toSource(printOptions);
 };
 
