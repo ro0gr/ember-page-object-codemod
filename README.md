@@ -21,6 +21,7 @@ ember-page-object-codemod <TRANSFORM NAME> path/of/files/ or/some**/*glob.js
 <!--TRANSFORMS_START-->
 * [explicit-async](transforms/explicit-async/README.md)
 * [find-one](transforms/find-one/README.md)
+* [multiple](transforms/multiple/README.md)
 <!--TRANSFORMS_END-->
 
 ## Contributing

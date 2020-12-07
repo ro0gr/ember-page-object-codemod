@@ -198,21 +198,7 @@ function organizeImports(j, source, replacedNames) {
     });
 }
 
-/*
- * Find page object properties with multiple keyword.
- * For example:
- *
- * ```
- * const page = create({
- *   scope: 'div',
- *   tags: text('.tag', { multiple: true })
- * });
- * ```
- *
- * Returns node: `tags: text('.tag', { multiple: true })`
- */
 function findNodes(j, root) {
-  // TODO: filter out nodes if they already have a corresponding underscored getter
   return j(root)
     .find(j.ObjectProperty)
     .filter(el => pageObjectPropertyWithMultipleKeyword(j, el));
@@ -222,7 +208,6 @@ function pageObjectPropertyWithMultipleKeyword(j, node) {
   let objectExpression = node.parent;
   let parentCallExpression = objectExpression.parent;
 
-  // If parent expression is not call expression or is not supported call expression
   if (
     parentCallExpression.value.type !== j.CallExpression.name ||
     !SUPPORTED_PARENT_PROPS.includes(parentCallExpression.value.callee.name)
@@ -231,23 +216,17 @@ function pageObjectPropertyWithMultipleKeyword(j, node) {
   }
 
   let childCallExpression = node.value.value;
-  // If property value is not call expression
   if (childCallExpression.type !== j.CallExpression.name) {
     return false;
   }
 
-  // If callee is not supported
   if (!SUPPORTED_PROP_CALLEE_NAMES.includes(childCallExpression.callee.name)) {
     return false;
   }
 
-  // If there is an argument object expression with multiple keyword property
   return childCallExpression.arguments.some(el => expressionWithMultipleKeyword(j, el));
 }
 
-/*
- * Find object properties with multiple keyword only.
- */
 function expressionWithMultipleKeyword(j, node) {
   if (node.type !== j.ObjectExpression.name) {
     return false;
