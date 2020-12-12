@@ -1,6 +1,6 @@
-import { create, text } from 'ember-cli-page-object';
+import { property } from 'ember-cli-page-object';
 
-const page = create({
+export default {
   scope: 'div',
-  tags: text('.tag', { multiple: true })
-});
+  disabled: property('disabled', '.tags', { multiple: true })
+};

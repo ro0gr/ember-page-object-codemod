@@ -27,6 +27,7 @@ ember-page-object-codemod multiple path/of/files/ or/some**/*glob.js
 * [multiple-imports](#multiple-imports)
 * [multiple-not-has-class](#multiple-not-has-class)
 * [multiple-property](#multiple-property)
+* [multiple-text](#multiple-text)
 * [multiple-value](#multiple-value)
 * [multiple-with-collection-imported](#multiple-with-collection-imported)
 * [multiple-with-text-imported](#multiple-with-text-imported)
@@ -124,31 +125,34 @@ const page = create({
 
 **Input** (<small>[multiple-default.input.js](transforms/multiple/__testfixtures__/multiple-default.input.js)</small>):
 ```js
-import { create, text } from 'ember-cli-page-object';
+import { property } from 'ember-cli-page-object';
 
-const page = create({
+export default {
   scope: 'div',
-  tags: text('.tag', { multiple: true })
-});
+  disabled: property('disabled', '.tags', { multiple: true })
+};
 
 ```
 
 **Output** (<small>[multiple-default.output.js](transforms/multiple/__testfixtures__/multiple-default.output.js)</small>):
 ```js
-import { create, collection } from 'ember-cli-page-object';
+import { property, collection } from 'ember-cli-page-object';
 
-const page = create({
+export default {
   scope: 'div',
-  _tags: collection('.tag'),
 
-  tags: {
+  _disabled: collection('.tags', {
+    disabled: property('disabled')
+  }),
+
+  disabled: {
     isDescriptor: true,
 
     get: function() {
-      return this._tags.map((el) => el.text);
+      return this._disabled.map((el) => el.disabled);
     }
   }
-});
+};
 
 ```
 ---
@@ -286,6 +290,38 @@ const page = create({
 
     get: function() {
       return this._disabled.map((el) => el.disabled);
+    }
+  }
+});
+
+```
+---
+<a id="multiple-text">**multiple-text**</a>
+
+**Input** (<small>[multiple-text.input.js](transforms/multiple/__testfixtures__/multiple-text.input.js)</small>):
+```js
+import { create, text } from 'ember-cli-page-object';
+
+const page = create({
+  scope: 'div',
+  tags: text('.tag', { multiple: true })
+});
+
+```
+
+**Output** (<small>[multiple-text.output.js](transforms/multiple/__testfixtures__/multiple-text.output.js)</small>):
+```js
+import { create, collection } from 'ember-cli-page-object';
+
+const page = create({
+  scope: 'div',
+  _tags: collection('.tag'),
+
+  tags: {
+    isDescriptor: true,
+
+    get: function() {
+      return this._tags.map((el) => el.text);
     }
   }
 });

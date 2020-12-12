@@ -206,11 +206,12 @@ function findNodes(j, root) {
 
 function pageObjectPropertyWithMultipleKeyword(j, node) {
   let objectExpression = node.parent;
-  let parentCallExpression = objectExpression.parent;
+  let parentExpression = objectExpression.parent;
 
   if (
-    parentCallExpression.value.type !== j.CallExpression.name ||
-    !SUPPORTED_PARENT_PROPS.includes(parentCallExpression.value.callee.name)
+    parentExpression.node.type !== j.ExportDefaultDeclaration.name &&
+    (parentExpression.value.type !== j.CallExpression.name ||
+      !SUPPORTED_PARENT_PROPS.includes(parentExpression.value.callee.name))
   ) {
     return false;
   }

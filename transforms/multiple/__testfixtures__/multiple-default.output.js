@@ -1,14 +1,17 @@
-import { create, collection } from 'ember-cli-page-object';
+import { property, collection } from 'ember-cli-page-object';
 
-const page = create({
+export default {
   scope: 'div',
-  _tags: collection('.tag'),
 
-  tags: {
+  _disabled: collection('.tags', {
+    disabled: property('disabled')
+  }),
+
+  disabled: {
     isDescriptor: true,
 
     get: function() {
-      return this._tags.map((el) => el.text);
+      return this._disabled.map((el) => el.disabled);
     }
   }
-});
+};
