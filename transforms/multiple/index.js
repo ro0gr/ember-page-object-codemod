@@ -159,10 +159,6 @@ function organizeImports(j, source, replacedNames) {
     .replaceWith(nodePath => {
       let { node } = nodePath;
 
-      if (replacedNames.length === 0) {
-        return node;
-      }
-
       let importedNames = node.specifiers.filter(s => s.imported).map(s => s.imported.name);
 
       // remove unused specifiers
@@ -217,10 +213,6 @@ function pageObjectPropertyWithMultipleKeyword(j, node) {
 
 function expressionWithMultipleKeyword(j, node) {
   if (node.type !== j.ObjectExpression.name) {
-    return false;
-  }
-
-  if (node.properties.length != 1) {
     return false;
   }
 
