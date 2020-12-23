@@ -25,6 +25,7 @@ ember-page-object-codemod multiple path/of/files/ or/some**/*glob.js
 * [multiple-default](#multiple-default)
 * [multiple-has-class](#multiple-has-class)
 * [multiple-imports](#multiple-imports)
+* [multiple-nested](#multiple-nested)
 * [multiple-not-has-class](#multiple-not-has-class)
 * [multiple-property](#multiple-property)
 * [multiple-text](#multiple-text)
@@ -32,6 +33,7 @@ ember-page-object-codemod multiple path/of/files/ or/some**/*glob.js
 * [multiple-with-collection-imported](#multiple-with-collection-imported)
 * [multiple-with-text-imported](#multiple-with-text-imported)
 * [no-multiple](#no-multiple)
+* [no-page-object](#no-page-object)
 <!--FIXTURES_TOC_END-->
 
 <!--FIXTURES_CONTENT_START-->
@@ -223,6 +225,62 @@ const page = create({
     }
   }
 });
+
+```
+---
+<a id="multiple-nested">**multiple-nested**</a>
+
+**Input** (<small>[multiple-nested.input.js](transforms/multiple/__testfixtures__/multiple-nested.input.js)</small>):
+```js
+import { attribute } from 'ember-cli-page-object';
+
+const NestedPage = {
+  test: attribute('src', '.tags', { multiple: true })
+};
+
+export default {
+  nested: {
+    test: attribute('src', '.tags', { multiple: true })
+  },
+  nested2: NestedPage
+};
+
+```
+
+**Output** (<small>[multiple-nested.output.js](transforms/multiple/__testfixtures__/multiple-nested.output.js)</small>):
+```js
+import { attribute, collection } from 'ember-cli-page-object';
+
+const NestedPage = {
+  _test: collection('.tags', {
+    test: attribute('src')
+  }),
+
+  test: {
+    isDescriptor: true,
+
+    get: function() {
+      return this._test.map((el) => el.test);
+    }
+  }
+};
+
+export default {
+  nested: {
+    _test: collection('.tags', {
+      test: attribute('src')
+    }),
+
+    test: {
+      isDescriptor: true,
+
+      get: function() {
+        return this._test.map((el) => el.test);
+      }
+    }
+  },
+  nested2: NestedPage
+};
 
 ```
 ---
@@ -449,6 +507,32 @@ const page = create({
   scope: 'div',
   name: text('.name')
 });
+
+```
+---
+<a id="no-page-object">**no-page-object**</a>
+
+**Input** (<small>[no-page-object.input.js](transforms/multiple/__testfixtures__/no-page-object.input.js)</small>):
+```js
+import { attribute } from 'attribute';
+
+export default {
+  nested: {
+    test: attribute('src', '.tags', { multiple: true })
+  }
+};
+
+```
+
+**Output** (<small>[no-page-object.output.js](transforms/multiple/__testfixtures__/no-page-object.output.js)</small>):
+```js
+import { attribute } from 'attribute';
+
+export default {
+  nested: {
+    test: attribute('src', '.tags', { multiple: true })
+  }
+};
 
 ```
 <!--FIXTURES_CONTENT_END-->

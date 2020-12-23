@@ -2,8 +2,6 @@ const { getParser } = require('codemod-cli').jscodeshift;
 const ROOT_SOURCE_PATH = 'ember-cli-page-object';
 const EXTEND_SOURCE_PATH = 'ember-cli-page-object/extend';
 
-const SUPPORTED_PARENT_PROPS = ['create', 'collection'];
-
 const SUPPORTED_TEXT_BASED_PROPS = ['text', 'value'];
 const SUPPORTED_BOOL_BASED_PROPS = ['isVisible', 'isHidden', 'isPresent'];
 const SUPPORTED_SCOPE_BASED_PROPS = ['attribute', 'property', 'hasClass', 'notHasClass'];
@@ -205,17 +203,6 @@ function findNodes(j, root) {
 }
 
 function pageObjectPropertyWithMultipleKeyword(j, node) {
-  let objectExpression = node.parent;
-  let parentExpression = objectExpression.parent;
-
-  if (
-    parentExpression.node.type !== j.ExportDefaultDeclaration.name &&
-    (parentExpression.value.type !== j.CallExpression.name ||
-      !SUPPORTED_PARENT_PROPS.includes(parentExpression.value.callee.name))
-  ) {
-    return false;
-  }
-
   let childCallExpression = node.value.value;
   if (childCallExpression.type !== j.CallExpression.name) {
     return false;
